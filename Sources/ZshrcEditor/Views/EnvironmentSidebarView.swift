@@ -4,6 +4,11 @@ struct EnvironmentSidebarView: View {
     @ObservedObject var viewModel: EditorViewModel
 
     @State private var filter = ""
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: EditorThemePalette {
+        EditorTheme.palette(isDarkMode: colorScheme == .dark)
+    }
 
     private var filteredSymbols: [ShellSymbol] {
         guard !filter.isEmpty else { return viewModel.shellSymbols }
@@ -30,7 +35,7 @@ struct EnvironmentSidebarView: View {
 
                 Text(L10n.quickJumpDescription)
                     .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color(nsColor: palette.secondaryTextColor))
 
                 TextField(L10n.filterSymbols, text: $filter)
                     .textFieldStyle(.roundedBorder)
@@ -81,24 +86,29 @@ struct EnvironmentSidebarView: View {
             }
             .listStyle(.sidebar)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color(nsColor: palette.secondaryChromeBackground))
     }
 
     private func countPill(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 11, weight: .medium))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color(nsColor: palette.secondaryTextColor))
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
             .background(
                 Capsule()
-                    .fill(Color.secondary.opacity(0.10))
+                    .fill(Color(nsColor: palette.accentMutedBackground))
             )
     }
 }
 
 private struct SymbolRow: View {
     let symbol: ShellSymbol
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: EditorThemePalette {
+        EditorTheme.palette(isDarkMode: colorScheme == .dark)
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -111,18 +121,18 @@ private struct SymbolRow: View {
                     Text(symbol.kind.badgeText)
                         .font(.system(size: 10, weight: .bold))
                         .textCase(.uppercase)
-                        .foregroundStyle(badgeColor)
+                        .foregroundStyle(Color(nsColor: badgeForeground))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
                         .background(
                             Capsule()
-                                .fill(badgeColor.opacity(0.14))
+                                .fill(Color(nsColor: badgeBackground))
                         )
                 }
 
                 Text(symbol.detail)
                     .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color(nsColor: palette.secondaryTextColor))
                     .lineLimit(1)
             }
 
@@ -130,20 +140,31 @@ private struct SymbolRow: View {
 
             Text(L10n.lineBadge(symbol.line))
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Color(nsColor: palette.mutedTextColor))
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
     }
 
-    private var badgeColor: Color {
+    private var badgeForeground: NSColor {
         switch symbol.kind {
         case .exportVariable:
-            return .green
+            return palette.successColor
         case .variable:
-            return .orange
+            return palette.warningColor
         case .alias:
-            return .blue
+            return palette.accentColor
+        }
+    }
+
+    private var badgeBackground: NSColor {
+        switch symbol.kind {
+        case .exportVariable:
+            return palette.successMutedBackground
+        case .variable:
+            return palette.warningMutedBackground
+        case .alias:
+            return palette.accentMutedBackground
         }
     }
 }

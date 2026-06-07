@@ -32,6 +32,7 @@ struct SearchBarView: View {
                 TextField(L10n.searchPlaceholder, text: $viewModel.searchQuery)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
+                    .foregroundStyle(Color(nsColor: palette.textColor))
                     .focused($isSearchFieldFocused)
                     .onSubmit {
                         viewModel.nextMatch()
@@ -44,11 +45,11 @@ struct SearchBarView: View {
                     }
 
                 if !viewModel.searchQuery.isEmpty {
-                    Text(matchCountText)
-                        .font(.system(size: 12, weight: .medium).monospacedDigit())
-                        .foregroundStyle(hasNoMatch ? noResultsTint : .secondary)
-                        .frame(minWidth: 52, alignment: .trailing)
-                        .padding(.trailing, 4)
+                Text(matchCountText)
+                    .font(.system(size: 12, weight: .medium).monospacedDigit())
+                    .foregroundStyle(hasNoMatch ? noResultsTint : Color(nsColor: palette.secondaryTextColor))
+                    .frame(minWidth: 52, alignment: .trailing)
+                    .padding(.trailing, 4)
                 }
 
                 if !viewModel.searchQuery.isEmpty {
@@ -88,11 +89,19 @@ struct SearchBarView: View {
             } label: {
                 Text("Aa")
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(viewModel.isCaseSensitive ? Color.accentColor : .secondary)
+                    .foregroundStyle(
+                        viewModel.isCaseSensitive
+                            ? Color(nsColor: palette.accentColor)
+                            : Color(nsColor: palette.secondaryTextColor)
+                    )
                     .frame(width: 28, height: 24)
                     .background(
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(viewModel.isCaseSensitive ? Color.accentColor.opacity(0.14) : .clear)
+                            .fill(
+                                viewModel.isCaseSensitive
+                                    ? Color(nsColor: palette.accentMutedBackground)
+                                    : .clear
+                            )
                     )
             }
             .buttonStyle(.plain)
@@ -163,9 +172,6 @@ struct SearchBarView: View {
     }
 
     private var noResultsTint: Color {
-        if colorScheme == .dark {
-            return Color(nsColor: .systemGray)
-        }
-        return Color(nsColor: .systemGray)
+        Color(nsColor: palette.dangerColor)
     }
 }

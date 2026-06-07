@@ -110,7 +110,9 @@ struct ContentView: View {
         HStack(spacing: 0) {
             statusItem(
                 viewModel.isModified ? L10n.unsavedChanges : L10n.saved,
-                color: viewModel.isModified ? .red : .secondary
+                color: viewModel.isModified
+                    ? Color(nsColor: palette.warningColor)
+                    : Color(nsColor: palette.secondaryTextColor)
             )
 
             statusItem(L10n.lineColumn(cursorLine, cursorColumn))
@@ -121,18 +123,18 @@ struct ContentView: View {
                 statusItem(
                     syntaxResult.statusLabel,
                     help: syntaxResult.message,
-                    color: .red
+                    color: Color(nsColor: palette.dangerColor)
                 )
 
                 statusMessageItem(
                     syntaxResult.reasonLabel,
                     help: syntaxResult.message,
-                    color: .red
+                    color: Color(nsColor: palette.dangerColor)
                 )
             }
 
             if let result = viewModel.sourceResult, !result.success {
-                statusItem(L10n.sourceFailed, color: .red)
+                statusItem(L10n.sourceFailed, color: Color(nsColor: palette.dangerColor))
             }
 
             if !viewModel.searchQuery.isEmpty {
@@ -150,7 +152,7 @@ struct ContentView: View {
             if let lastSavedAt = viewModel.lastSavedAt {
                 Text(lastSavedAt.formatted(date: .omitted, time: .shortened))
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color(nsColor: palette.secondaryTextColor))
                     .padding(.horizontal, 14)
             }
         }
