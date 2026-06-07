@@ -59,6 +59,27 @@ final class SyntaxHighlighter {
 
     private func rebuildRules() {
         var newRules: [HighlightRule] = []
+        let shellKeywords = [
+            "if", "then", "else", "elif", "fi",
+            "for", "while", "do", "done",
+            "case", "esac", "in",
+            "function", "return", "local",
+            "break", "continue"
+        ]
+        let builtinCommands = [
+            "source", "export", "alias", "unset",
+            "typeset", "declare", "eval",
+            "setopt", "unsetopt", "read",
+            "echo", "printf", "cd", "pwd",
+            "dirs", "pushd", "popd", "test",
+            "true", "false"
+        ]
+
+        if let pattern = try? NSRegularExpression(
+            pattern: #"(?<![$A-Za-z0-9_./~+-])([A-Za-z0-9_][A-Za-z0-9_.+-]*)(?![A-Za-z0-9_./~+-])"#
+        ) {
+            newRules.append(HighlightRule(pattern: pattern, color: argumentColor))
+        }
 
         if let pattern = try? NSRegularExpression(
             pattern: #"^\s*(?:export\s+|typeset\s+-x\s+|declare\s+-x\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*="#,
@@ -74,6 +95,64 @@ final class SyntaxHighlighter {
             newRules.append(HighlightRule(pattern: pattern, color: assignmentColor))
         }
 
+        if let pattern = try? NSRegularExpression(
+            pattern: #"^\s*([A-Za-z_][A-Za-z0-9_\-]*)\s*\(\)"#,
+            options: [.anchorsMatchLines]
+        ) {
+            newRules.append(HighlightRule(pattern: pattern, color: functionColor))
+        }
+
+        if let pattern = try? NSRegularExpression(
+            pattern: #"(?m)(?:^|[;&|()]\s*)(source|export|alias|unset|typeset|declare|eval|setopt|unsetopt|read|echo|printf|cd|pwd|dirs|pushd|popd|test|true|false)\b"#
+        ) {
+            newRules.append(HighlightRule(pattern: pattern, color: builtinColor))
+        }
+
+        if let pattern = try? NSRegularExpression(
+            pattern: #"(?m)(?:^|[;&|()]\s*)(if|then|else|elif|fi|for|while|do|done|case|esac|in|function|return|local|break|continue)\b"#
+        ) {
+            newRules.append(HighlightRule(pattern: pattern, color: keywordColor))
+        }
+
+        let excludedInvocations = (shellKeywords + builtinCommands).joined(separator: "|")
+        if let pattern = try? NSRegularExpression(
+            pattern: #"(?m)(?:^|[;&|()]\s*)(?!(?:\#(excludedInvocations))\b)([A-Za-z_][A-Za-z0-9_\-]*)\b(?!\s*=)(?!\s*\()"#
+        ) {
+            newRules.append(HighlightRule(pattern: pattern, color: commandColor))
+        }
+
+        if let pattern = try? NSRegularExpression(pattern: #"\$\([^\n]*\)"#) {
+            newRules.append(HighlightRule(pattern: pattern, color: commandColor))
+        }
+
+        if let pattern = try? NSRegularExpression(pattern: #"\$\{?[\w@#\*\?!\-0-9]+\}?"#) {
+            newRules.append(HighlightRule(pattern: pattern, color: variableColor))
+        }
+
+        if let pattern = try? NSRegularExpression(
+            pattern: #"\$\{?[\w@#\*\?!\-0-9]+\}?((?:/[A-Za-z0-9._+\-]+)+)"#
+        ) {
+            newRules.append(HighlightRule(pattern: pattern, color: pathColor))
+        }
+
+        if let pattern = try? NSRegularExpression(
+            pattern: #"(?<![\w$])((?:~|/|\./|\.\./)[A-Za-z0-9._+/\-]+)"#
+        ) {
+            newRules.append(HighlightRule(pattern: pattern, color: pathColor))
+        }
+
+        if let pattern = try? NSRegularExpression(
+            pattern: #"(?:&&|\|\||;;|[;&|(){}\[\]=<>:]|(?<=\s)\\\.|(?<=\s)-{1,2}[A-Za-z0-9][A-Za-z0-9_-]*(?=\s|$|[:)]))"#
+        ) {
+            newRules.append(HighlightRule(pattern: pattern, color: operatorColor))
+        }
+
+        if let pattern = try? NSRegularExpression(
+            pattern: ##"\b(?:https?|socks[45])://[^\s"'`(){}<>]+"##
+        ) {
+            newRules.append(HighlightRule(pattern: pattern, color: stringColor))
+        }
+
         if let pattern = try? NSRegularExpression(pattern: #""(?:[^"\\]|\\.)*""#) {
             newRules.append(HighlightRule(pattern: pattern, color: stringColor))
         }
@@ -86,37 +165,6 @@ final class SyntaxHighlighter {
             newRules.append(HighlightRule(pattern: pattern, color: stringColor))
         }
 
-        if let pattern = try? NSRegularExpression(pattern: #"\$\([^\n]*\)"#) {
-            newRules.append(HighlightRule(pattern: pattern, color: commandColor))
-        }
-
-        if let pattern = try? NSRegularExpression(pattern: #"\$\{?[\w@#\*\?!\-0-9]+\}?"#) {
-            newRules.append(HighlightRule(pattern: pattern, color: variableColor))
-        }
-
-        let keywords = [
-            "if", "then", "else", "elif", "fi",
-            "for", "while", "do", "done",
-            "case", "esac", "in",
-            "function", "return", "local",
-            "export", "source", "alias", "unset",
-            "typeset", "declare", "eval",
-            "setopt", "unsetopt", "read",
-            "echo", "printf", "break", "continue",
-            "true", "false"
-        ]
-        let keywordPattern = "\\b(?:" + keywords.joined(separator: "|") + ")\\b"
-        if let pattern = try? NSRegularExpression(pattern: keywordPattern) {
-            newRules.append(HighlightRule(pattern: pattern, color: keywordColor))
-        }
-
-        if let pattern = try? NSRegularExpression(
-            pattern: #"^\s*([A-Za-z_][A-Za-z0-9_\-]*)\s*\(\)"#,
-            options: [.anchorsMatchLines]
-        ) {
-            newRules.append(HighlightRule(pattern: pattern, color: functionColor))
-        }
-
         if let pattern = try? NSRegularExpression(pattern: #"#[^\n]*"#) {
             newRules.append(HighlightRule(pattern: pattern, color: commentColor))
         }
@@ -124,47 +172,55 @@ final class SyntaxHighlighter {
         rules = newRules
     }
 
+    private var palette: EditorThemePalette {
+        EditorTheme.palette(isDarkMode: isDarkMode)
+    }
+
     private var defaultTextColor: NSColor {
-        isDarkMode ? NSColor(white: 0.92, alpha: 1) : NSColor(white: 0.10, alpha: 1)
+        palette.textColor
     }
 
     private var stringColor: NSColor {
-        isDarkMode
-            ? NSColor(red: 0.40, green: 0.85, blue: 0.40, alpha: 1)
-            : NSColor(red: 0.11, green: 0.54, blue: 0.11, alpha: 1)
+        palette.stringColor
     }
 
     private var variableColor: NSColor {
-        isDarkMode
-            ? NSColor(red: 0.30, green: 0.80, blue: 1.00, alpha: 1)
-            : NSColor(red: 0.00, green: 0.45, blue: 0.75, alpha: 1)
+        palette.variableColor
     }
 
     private var keywordColor: NSColor {
-        isDarkMode
-            ? NSColor(red: 0.84, green: 0.55, blue: 1.00, alpha: 1)
-            : NSColor(red: 0.55, green: 0.10, blue: 0.75, alpha: 1)
+        palette.keywordColor
+    }
+
+    private var builtinColor: NSColor {
+        palette.builtinColor
     }
 
     private var commentColor: NSColor {
-        isDarkMode ? NSColor(white: 0.55, alpha: 1) : NSColor(white: 0.50, alpha: 1)
+        palette.commentColor
     }
 
     private var functionColor: NSColor {
-        isDarkMode
-            ? NSColor(red: 1.00, green: 0.75, blue: 0.30, alpha: 1)
-            : NSColor(red: 0.75, green: 0.35, blue: 0.00, alpha: 1)
+        palette.functionColor
+    }
+
+    private var pathColor: NSColor {
+        palette.pathColor
+    }
+
+    private var argumentColor: NSColor {
+        palette.argumentColor
     }
 
     private var assignmentColor: NSColor {
-        isDarkMode
-            ? NSColor(red: 0.95, green: 0.78, blue: 0.32, alpha: 1)
-            : NSColor(red: 0.78, green: 0.35, blue: 0.02, alpha: 1)
+        palette.assignmentColor
     }
 
     private var commandColor: NSColor {
-        isDarkMode
-            ? NSColor(red: 1.00, green: 0.65, blue: 0.45, alpha: 1)
-            : NSColor(red: 0.75, green: 0.28, blue: 0.08, alpha: 1)
+        palette.commandColor
+    }
+
+    private var operatorColor: NSColor {
+        palette.operatorColor
     }
 }

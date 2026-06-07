@@ -7,6 +7,10 @@ struct SearchBarView: View {
     @Environment(\.colorScheme) private var colorScheme
     @FocusState private var isSearchFieldFocused: Bool
 
+    private var palette: EditorThemePalette {
+        EditorTheme.palette(isDarkMode: colorScheme == .dark)
+    }
+
     private var hasNoMatch: Bool {
         !viewModel.searchQuery.isEmpty && viewModel.searchResults.isEmpty
     }
@@ -64,11 +68,11 @@ struct SearchBarView: View {
             .padding(.trailing, 2)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(nsColor: .textBackgroundColor))
+                    .fill(Color(nsColor: palette.searchFieldBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
                             .strokeBorder(
-                                Color(nsColor: .separatorColor),
+                                Color(nsColor: palette.searchFieldBorder),
                                 lineWidth: 1
                             )
                     )
@@ -130,9 +134,11 @@ struct SearchBarView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 42)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color(nsColor: palette.searchBarBackground))
         .overlay(alignment: .bottom) {
-            Divider()
+            Rectangle()
+                .fill(Color(nsColor: palette.searchFieldBorder))
+                .frame(height: 1)
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {

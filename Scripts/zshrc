@@ -1,7 +1,7 @@
 #!/bin/sh
 
-APP_PATH="$HOME/Applications/ZshrcEditor.app"
-FALLBACK_APP="/private/tmp/ZshrcEditorProjectDerivedData/Build/Products/Debug/ZshrcEditor.app"
+APP_PATH="$HOME/Applications/zshrc.app"
+FALLBACK_APP="/private/tmp/ZshrcEditorProjectDerivedData/Build/Products/Debug/zshrc.app"
 
 if [ -d "$APP_PATH" ]; then
   exec open "$APP_PATH"
@@ -11,5 +11,5 @@ if [ -d "$FALLBACK_APP" ]; then
   exec open "$FALLBACK_APP"
 fi
 
-printf '%s\n' "ZshrcEditor.app not found. Build or install the app first." >&2
+printf '%s\n' "zshrc.app not found. Build or install the app first." >&2
 exit 1

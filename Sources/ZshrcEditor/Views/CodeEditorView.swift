@@ -4,6 +4,9 @@ import SwiftUI
 final class EditorTextView: NSTextView {
     var onSaveCommand: (() -> Void)?
     var onFindCommand: (() -> Void)?
+    var onIncreaseFontSize: (() -> Void)?
+    var onDecreaseFontSize: (() -> Void)?
+    var onResetFontSize: (() -> Void)?
     private var hasAutoFocused = false
 
     override func viewDidMoveToWindow() {
@@ -36,6 +39,26 @@ final class EditorTextView: NSTextView {
 
         if flags == [.command], event.charactersIgnoringModifiers?.lowercased() == "f" {
             onFindCommand?()
+            return
+        }
+
+        if flags == [.command], event.charactersIgnoringModifiers == "=" {
+            onIncreaseFontSize?()
+            return
+        }
+
+        if flags == [.command], event.characters == "+" {
+            onIncreaseFontSize?()
+            return
+        }
+
+        if flags == [.command], event.charactersIgnoringModifiers == "-" {
+            onDecreaseFontSize?()
+            return
+        }
+
+        if flags == [.command], event.charactersIgnoringModifiers == "0" {
+            onResetFontSize?()
             return
         }
 
@@ -386,10 +409,7 @@ final class LineNumberRulerView: NSRulerView {
 
     private var backgroundColor: NSColor {
         let appearance = textView?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua])
-        if appearance == .darkAqua {
-            return NSColor(white: 0.13, alpha: 1)
-        }
-        return NSColor(white: 0.985, alpha: 1)
+        return EditorTheme.palette(isDarkMode: appearance == .darkAqua).gutterBackground
     }
 
     private func drawLineNumbers() {
@@ -442,7 +462,7 @@ final class LineNumberRulerView: NSRulerView {
                         : lineNumberFont,
                     .foregroundColor: isHighlightedLine
                         ? highlightColor
-                        : NSColor.secondaryLabelColor
+                        : lineNumberColor
                 ]
                 let labelSize = label.size(withAttributes: attributes)
                 let drawRect = NSRect(
@@ -495,7 +515,13 @@ final class LineNumberRulerView: NSRulerView {
     }
 
     private var highlightColor: NSColor {
-        .black
+        let appearance = textView?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua])
+        return EditorTheme.palette(isDarkMode: appearance == .darkAqua).gutterActiveLineNumber
+    }
+
+    private var lineNumberColor: NSColor {
+        let appearance = textView?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua])
+        return EditorTheme.palette(isDarkMode: appearance == .darkAqua).gutterLineNumber
     }
 }
 
@@ -512,6 +538,9 @@ struct CodeEditorView: NSViewRepresentable {
     let focusedRange: NSRange?
     let focusRevision: Int
     let onSaveCommand: () -> Void
+    let onIncreaseFontSize: () -> Void
+    let onDecreaseFontSize: () -> Void
+    let onResetFontSize: () -> Void
     let onFindCommand: () -> Void
 
     @MainActor
@@ -648,6 +677,9 @@ struct CodeEditorView: NSViewRepresentable {
         textView.delegate = context.coordinator
         textView.onSaveCommand = onSaveCommand
         textView.onFindCommand = onFindCommand
+        textView.onIncreaseFontSize = onIncreaseFontSize
+        textView.onDecreaseFontSize = onDecreaseFontSize
+        textView.onResetFontSize = onResetFontSize
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false
         textView.autoresizingMask = [.width]
@@ -702,10 +734,14 @@ struct CodeEditorView: NSViewRepresentable {
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? EditorTextView else { return }
+        context.coordinator.parent = self
         let isComposingMarkedText = context.coordinator.isComposing(in: textView)
 
         textView.onSaveCommand = onSaveCommand
         textView.onFindCommand = onFindCommand
+        textView.onIncreaseFontSize = onIncreaseFontSize
+        textView.onDecreaseFontSize = onDecreaseFontSize
+        textView.onResetFontSize = onResetFontSize
 
         textView.backgroundColor = backgroundColor
         textView.insertionPointColor = foregroundColor
@@ -755,6 +791,7 @@ struct CodeEditorView: NSViewRepresentable {
 
     private func applyDecorations(to textView: NSTextView, context: Context) {
         guard let textStorage = textView.textStorage else { return }
+        let palette = EditorTheme.palette(isDarkMode: isDarkMode)
 
         var hasher = Hasher()
         hasher.combine(syntaxErrorLine)
@@ -783,16 +820,9 @@ struct CodeEditorView: NSViewRepresentable {
         }
 
         if !searchResults.isEmpty {
-            let matchColor = isDarkMode
-                ? NSColor(red: 0.80, green: 0.65, blue: 0.10, alpha: 0.45)
-                : NSColor(red: 0.98, green: 0.85, blue: 0.10, alpha: 0.55)
-            let currentMatchColor = isDarkMode
-                ? NSColor(red: 1.00, green: 0.75, blue: 0.00, alpha: 0.85)
-                : NSColor(red: 1.00, green: 0.72, blue: 0.00, alpha: 0.90)
-
             textStorage.beginEditing()
             for (index, range) in searchResults.enumerated() where NSMaxRange(range) <= textStorage.length {
-                let color = index == currentSearchIndex ? currentMatchColor : matchColor
+                let color = index == currentSearchIndex ? palette.currentSearchMatch : palette.searchMatch
                 textStorage.addAttribute(.backgroundColor, value: color, range: range)
             }
             textStorage.endEditing()
@@ -802,18 +832,15 @@ struct CodeEditorView: NSViewRepresentable {
     }
 
     private var backgroundColor: NSColor {
-        isDarkMode ? NSColor(white: 0.12, alpha: 1) : NSColor(white: 0.985, alpha: 1)
+        EditorTheme.palette(isDarkMode: isDarkMode).editorBackground
     }
 
     private var foregroundColor: NSColor {
-        isDarkMode ? NSColor(white: 0.92, alpha: 1) : NSColor(white: 0.10, alpha: 1)
+        EditorTheme.palette(isDarkMode: isDarkMode).textColor
     }
 
     private var syntaxErrorColor: NSColor {
-        if isDarkMode {
-            return NSColor.systemRed.withAlphaComponent(0.22)
-        }
-        return NSColor.systemRed.withAlphaComponent(0.16)
+        EditorTheme.palette(isDarkMode: isDarkMode).syntaxErrorLine
     }
 }
 

@@ -12,6 +12,10 @@ struct ContentView: View {
     @State private var cursorColumn = 1
     @State private var showReloadConfirmation = false
 
+    private var palette: EditorThemePalette {
+        EditorTheme.palette(isDarkMode: colorScheme == .dark)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if isSearchBarVisible {
@@ -25,7 +29,7 @@ struct ContentView: View {
             editor
             statusBar
         }
-        .background(Color.editorPanelBackground)
+        .background(Color(nsColor: palette.editorBackground))
         .navigationTitle(viewModel.targetURL.lastPathComponent)
         .onAppear {
             commandCoordinator.onSave = { [weak viewModel] in
@@ -41,18 +45,6 @@ struct ContentView: View {
 
             commandCoordinator.onRevealInFinder = { [targetURL = viewModel.targetURL] in
                 AppOpenActions.revealInFinder(targetURL)
-            }
-
-            commandCoordinator.onIncreaseFontSize = {
-                editorSettings.increaseFontSize()
-            }
-
-            commandCoordinator.onDecreaseFontSize = {
-                editorSettings.decreaseFontSize()
-            }
-
-            commandCoordinator.onResetFontSize = {
-                editorSettings.resetFontSize()
             }
         }
         .alert(L10n.discardEditsTitle, isPresented: $showReloadConfirmation) {
@@ -96,6 +88,15 @@ struct ContentView: View {
             focusRevision: viewModel.focusRevision,
             onSaveCommand: {
                 Task { await viewModel.save() }
+            },
+            onIncreaseFontSize: {
+                editorSettings.increaseFontSize()
+            },
+            onDecreaseFontSize: {
+                editorSettings.decreaseFontSize()
+            },
+            onResetFontSize: {
+                editorSettings.resetFontSize()
             },
             onFindCommand: {
                 withAnimation(.easeInOut(duration: 0.18)) {
@@ -154,9 +155,11 @@ struct ContentView: View {
             }
         }
         .frame(height: 32)
-        .background(Color.editorChromeBackground)
+        .background(Color(nsColor: palette.chromeBackground))
         .overlay(alignment: .top) {
-            Divider()
+            Rectangle()
+                .fill(Color(nsColor: palette.divider))
+                .frame(height: 1)
         }
     }
 
@@ -208,9 +211,4 @@ struct ContentView: View {
         guard let syntaxResult = viewModel.syntaxResult, !syntaxResult.isValid else { return nil }
         return syntaxResult.line
     }
-}
-
-private extension Color {
-    static let editorPanelBackground = Color(nsColor: .textBackgroundColor)
-    static let editorChromeBackground = Color(nsColor: .windowBackgroundColor)
 }

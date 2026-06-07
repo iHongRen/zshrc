@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import SwiftUI
 
@@ -6,9 +7,6 @@ final class EditorCommandCoordinator {
     var onSave: @MainActor @Sendable () async -> Void = { }
     var onFind: @MainActor () -> Void = { }
     var onRevealInFinder: @MainActor () -> Void = { }
-    var onIncreaseFontSize: @MainActor () -> Void = { }
-    var onDecreaseFontSize: @MainActor () -> Void = { }
-    var onResetFontSize: @MainActor () -> Void = { }
 
     func save() {
         let action = onSave
@@ -24,18 +22,6 @@ final class EditorCommandCoordinator {
     func revealInFinder() {
         onRevealInFinder()
     }
-
-    func increaseFontSize() {
-        onIncreaseFontSize()
-    }
-
-    func decreaseFontSize() {
-        onDecreaseFontSize()
-    }
-
-    func resetFontSize() {
-        onResetFontSize()
-    }
 }
 
 @main
@@ -44,6 +30,10 @@ struct ZshrcEditorApp: App {
     @StateObject private var editorSettings = AppEditorSettings()
     @State private var commandCoordinator = EditorCommandCoordinator()
     @AppStorage(AppThemeMode.storageKey) private var themeModeRawValue = AppThemeMode.system.rawValue
+
+    init() {
+        NSWindow.allowsAutomaticWindowTabbing = false
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -78,23 +68,6 @@ struct ZshrcEditorApp: App {
                     commandCoordinator.find()
                 }
                 .keyboardShortcut("f", modifiers: .command)
-            }
-
-            CommandMenu(L10n.view) {
-                Button(L10n.zoomIn) {
-                    commandCoordinator.increaseFontSize()
-                }
-                .keyboardShortcut("=", modifiers: .command)
-
-                Button(L10n.zoomOut) {
-                    commandCoordinator.decreaseFontSize()
-                }
-                .keyboardShortcut("-", modifiers: .command)
-
-                Button(L10n.actualSize) {
-                    commandCoordinator.resetFontSize()
-                }
-                .keyboardShortcut("0", modifiers: .command)
             }
 
             CommandMenu(L10n.appearance) {

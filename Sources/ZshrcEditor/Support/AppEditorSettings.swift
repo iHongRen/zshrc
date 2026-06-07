@@ -4,7 +4,7 @@ import SwiftUI
 final class AppEditorSettings: ObservableObject {
     static let minFontSize: CGFloat = 11
     static let maxFontSize: CGFloat = 24
-    static let defaultFontSize: CGFloat = 13
+    static let defaultFontSize: CGFloat = 14
     static let step: CGFloat = 1
     private static let defaultsKey = "editor_font_size"
 
