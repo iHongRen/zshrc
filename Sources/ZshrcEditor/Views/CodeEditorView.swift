@@ -8,6 +8,7 @@ final class EditorTextView: NSTextView {
     var onDecreaseFontSize: (() -> Void)?
     var onResetFontSize: (() -> Void)?
     private var hasAutoFocused = false
+    private var isHoveringLink = false
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
@@ -23,6 +24,32 @@ final class EditorTextView: NSTextView {
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
         true
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == [.command],
+           let url = linkURL(at: event.locationInWindow) {
+            AppOpenActions.openInBrowser(url)
+            return
+        }
+
+        super.mouseDown(with: event)
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(visibleRect, cursor: .iBeam)
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        updateCursorForMouseLocation(event.locationInWindow)
+        super.mouseMoved(with: event)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        isHoveringLink = false
+        NSCursor.iBeam.set()
+        super.mouseExited(with: event)
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
@@ -113,6 +140,55 @@ final class EditorTextView: NSTextView {
         didChangeText()
 
         setSelectedRange(transformed.selectedRange.offsettingLocation(by: lineRange.location))
+    }
+
+    private func linkURL(at windowPoint: NSPoint) -> URL? {
+        guard let textStorage,
+              let layoutManager,
+              let textContainer else {
+            return nil
+        }
+
+        let localPoint = convert(windowPoint, from: nil)
+        let containerPoint = NSPoint(
+            x: localPoint.x - textContainerInset.width,
+            y: localPoint.y - textContainerInset.height
+        )
+
+        guard bounds.contains(localPoint) else { return nil }
+
+        let glyphIndex = layoutManager.glyphIndex(
+            for: containerPoint,
+            in: textContainer,
+            fractionOfDistanceThroughGlyph: nil
+        )
+
+        guard glyphIndex < layoutManager.numberOfGlyphs else { return nil }
+
+        let characterIndex = layoutManager.characterIndexForGlyph(at: glyphIndex)
+        guard characterIndex < textStorage.length else { return nil }
+
+        var effectiveRange = NSRange(location: 0, length: 0)
+        let attributes = textStorage.attributes(at: characterIndex, effectiveRange: &effectiveRange)
+        guard let url = attributes[.link] as? URL else { return nil }
+
+        let glyphRange = layoutManager.glyphRange(forCharacterRange: effectiveRange, actualCharacterRange: nil)
+        let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+
+        guard boundingRect.contains(containerPoint) else { return nil }
+        return url
+    }
+
+    private func updateCursorForMouseLocation(_ windowPoint: NSPoint) {
+        let hoveringLink = linkURL(at: windowPoint) != nil
+        guard hoveringLink != isHoveringLink else { return }
+
+        isHoveringLink = hoveringLink
+        if hoveringLink {
+            NSCursor.pointingHand.set()
+        } else {
+            NSCursor.iBeam.set()
+        }
     }
 }
 
@@ -710,6 +786,16 @@ struct CodeEditorView: NSViewRepresentable {
         textView.isGrammarCheckingEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         textView.importsGraphics = false
+        textView.isAutomaticLinkDetectionEnabled = false
+        textView.isContinuousSpellCheckingEnabled = false
+
+        let trackingArea = NSTrackingArea(
+            rect: .zero,
+            options: [.activeInKeyWindow, .inVisibleRect, .mouseMoved, .mouseEnteredAndExited],
+            owner: textView,
+            userInfo: nil
+        )
+        textView.addTrackingArea(trackingArea)
 
         scrollView.documentView = textView
 

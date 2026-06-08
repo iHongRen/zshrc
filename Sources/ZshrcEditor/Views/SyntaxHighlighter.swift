@@ -5,6 +5,10 @@ private struct HighlightRule {
     let color: NSColor
 }
 
+private struct LinkRule {
+    let pattern: NSRegularExpression
+}
+
 final class SyntaxHighlighter {
     var isDarkMode: Bool {
         didSet {
@@ -17,6 +21,7 @@ final class SyntaxHighlighter {
     var fontSize: CGFloat
 
     private var rules: [HighlightRule] = []
+    private var linkRules: [LinkRule] = []
 
     init(isDarkMode: Bool, fontSize: CGFloat) {
         self.isDarkMode = isDarkMode
@@ -47,6 +52,22 @@ final class SyntaxHighlighter {
                 }
 
                 attributedString.addAttribute(.foregroundColor, value: rule.color, range: highlightRange)
+            }
+        }
+
+        for rule in linkRules {
+            let matches = rule.pattern.matches(in: text, range: fullRange)
+            for match in matches {
+                let linkRange = match.numberOfRanges > 1 ? match.range(at: 1) : match.range
+                guard linkRange.location != NSNotFound,
+                      NSMaxRange(linkRange) <= attributedString.length else {
+                    continue
+                }
+
+                let rawLink = (text as NSString).substring(with: linkRange)
+                guard let url = URL(string: rawLink) else { continue }
+                attributedString.addAttribute(.link, value: url, range: linkRange)
+                attributedString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: linkRange)
             }
         }
 
@@ -151,6 +172,9 @@ final class SyntaxHighlighter {
             pattern: ##"\b(?:https?|socks[45])://[^\s"'`(){}<>]+"##
         ) {
             newRules.append(HighlightRule(pattern: pattern, color: stringColor))
+            linkRules = [LinkRule(pattern: pattern)]
+        } else {
+            linkRules = []
         }
 
         if let pattern = try? NSRegularExpression(pattern: #""(?:[^"\\]|\\.)*""#) {
