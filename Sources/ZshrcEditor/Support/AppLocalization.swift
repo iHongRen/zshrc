@@ -1,10 +1,36 @@
 import Foundation
 
-enum AppLanguage {
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case system
     case english
     case simplifiedChinese
 
+    static let storageKey = "app_language"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system:
+            L10n.followSystem
+        case .english:
+            "English"
+        case .simplifiedChinese:
+            "简体中文"
+        }
+    }
+
     static var current: AppLanguage {
+        if let storedValue = UserDefaults.standard.string(forKey: storageKey),
+           let storedLanguage = AppLanguage(rawValue: storedValue),
+           storedLanguage != .system {
+            return storedLanguage
+        }
+
+        return resolvedSystemLanguage
+    }
+
+    private static var resolvedSystemLanguage: AppLanguage {
         let candidates = Bundle.main.preferredLocalizations
             + Locale.preferredLanguages
             + [Locale.autoupdatingCurrent.identifier]
@@ -33,6 +59,8 @@ enum AppLanguage {
 enum L10n {
     private static func text(_ english: String, _ simplifiedChinese: String) -> String {
         switch AppLanguage.current {
+        case .system:
+            return english
         case .english:
             return english
         case .simplifiedChinese:
@@ -41,9 +69,24 @@ enum L10n {
     }
 
     static var save: String { text("Save", "保存") }
+    static var aboutProject: String { text("About This Project", "关于本项目") }
+    static var settings: String { text("Settings", "设置") }
+    static func hideApp(_ appName: String) -> String {
+        text("Hide \(appName)", "隐藏\(appName)")
+    }
+    static var hideOthers: String { text("Hide Others", "隐藏其他") }
+    static var showAll: String { text("Show All", "显示全部") }
+    static func quitApp(_ appName: String) -> String {
+        text("Quit \(appName)", "退出\(appName)")
+    }
     static var editor: String { text("Editor", "编辑") }
     static var find: String { text("Find", "查找") }
     static var appearance: String { text("Appearance", "外观") }
+    static var language: String { text("Language", "语言") }
+    static var followSystem: String { text("Follow System", "跟随系统") }
+    static var help: String { text("Help", "帮助") }
+    static var developerGitHub: String { text("Developer @仙银", "开发者 @仙银") }
+    static var projectGitHub: String { text("Project GitHub", "项目 GitHub") }
     static var matchSystem: String { text("Match System", "跟随系统") }
     static var light: String { text("Light", "浅色") }
     static var dark: String { text("Dark", "深色") }
@@ -61,19 +104,7 @@ enum L10n {
     static var delete: String { text("Delete", "删除") }
     static var selectAll: String { text("Select All", "全选") }
 
-    static var discardEditsTitle: String {
-        text("Discard local edits and reload from disk?", "放弃本地修改并从磁盘重新加载？")
-    }
-
-    static var reload: String { text("Reload", "重新加载") }
     static var cancel: String { text("Cancel", "取消") }
-    static var reloadMessage: String {
-        text(
-            "Your unsaved edits will be replaced by the current ~/.zshrc file on disk.",
-            "你当前未保存的修改将被磁盘上的 ~/.zshrc 内容替换。"
-        )
-    }
-
     static var somethingWentWrong: String { text("Something went wrong", "发生错误") }
     static var ok: String { text("OK", "确定") }
 
@@ -84,6 +115,7 @@ enum L10n {
     }
 
     static var sourceFailed: String { text("source failed", "source 失败") }
+    static var sourceSucceeded: String { text("source ok", "source 成功") }
     static var noMatches: String { text("No matches", "无匹配") }
     static func matchesCount(current: Int, total: Int) -> String {
         text("\(current)/\(total) matches", "\(current)/\(total) 个匹配")
@@ -125,44 +157,4 @@ enum L10n {
     }
 
     static var unknownZshError: String { text("Unknown zsh error.", "未知 zsh 错误。") }
-    static var skippedAutoReload: String {
-        text(
-            "Skipped auto reload because you have unsaved edits.",
-            "由于存在未保存修改，已跳过自动重新加载。"
-        )
-    }
-    static var reloadedFromDisk: String {
-        text("Reloaded ~/.zshrc from disk.", "已从磁盘重新加载 ~/.zshrc。")
-    }
-
-    static var quickJump: String { text("Quick Jump", "快速跳转") }
-    static var quickJumpDescription: String {
-        text(
-            "Jump straight to exports, plain assignments, and aliases from your .zshrc.",
-            "快速跳转到 .zshrc 中的 export、普通赋值和 alias。"
-        )
-    }
-    static var filterSymbols: String { text("Filter symbols", "筛选符号") }
-    static func variablesCount(_ count: Int) -> String {
-        text("\(count) variables", "\(count) 个变量")
-    }
-    static func aliasesCount(_ count: Int) -> String {
-        text("\(count) aliases", "\(count) 个别名")
-    }
-    static var noShellSymbolsFound: String { text("No shell symbols found", "未找到 Shell 符号") }
-    static var noShellSymbolsDescription: String {
-        text(
-            "Add lines like `export API_KEY=...` or `alias gs='git status'` to populate this list.",
-            "添加如 `export API_KEY=...` 或 `alias gs='git status'` 这样的行来填充列表。"
-        )
-    }
-    static var environment: String { text("Environment", "环境变量") }
-    static var aliases: String { text("Aliases", "别名") }
-    static func lineBadge(_ line: Int) -> String {
-        text("L\(line)", "第\(line)行")
-    }
-
-    static var badgeExport: String { text("export", "导出") }
-    static var badgeVariable: String { text("var", "变量") }
-    static var badgeAlias: String { text("alias", "别名") }
 }

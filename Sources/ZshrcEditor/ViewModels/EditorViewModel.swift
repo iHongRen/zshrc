@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 @MainActor
@@ -20,17 +21,14 @@ final class EditorViewModel: ObservableObject {
     @Published var syntaxResult: SyntaxCheckResult?
     @Published var isCheckingSyntax = false
     @Published var lastError: AppError?
-    @Published var shellSymbols: [ShellSymbol] = []
     @Published var isLoading = false
     @Published var lastSavedAt: Date?
-    @Published var noticeMessage: String?
 
     let targetURL: URL
 
     private let fileService: any FileServiceProtocol
     private let sourceRunner: any SourceRunnerProtocol
     private let syntaxChecker: any SyntaxCheckerProtocol
-    private let indexService: any EnvironmentIndexServiceProtocol
     private let fileWatcher: FileWatcherProtocol
 
     private enum SaveTrigger {
@@ -46,14 +44,12 @@ final class EditorViewModel: ObservableObject {
         fileService: FileServiceProtocol = FileService(),
         sourceRunner: SourceRunnerProtocol = SourceRunner(),
         syntaxChecker: SyntaxCheckerProtocol = SyntaxChecker(),
-        indexService: EnvironmentIndexServiceProtocol = EnvironmentIndexService(),
         fileWatcher: FileWatcherProtocol = FileWatcher()
     ) {
         self.targetURL = targetURL
         self.fileService = fileService
         self.sourceRunner = sourceRunner
         self.syntaxChecker = syntaxChecker
-        self.indexService = indexService
         self.fileWatcher = fileWatcher
     }
 
@@ -128,25 +124,16 @@ final class EditorViewModel: ObservableObject {
         focus(on: searchResults[currentSearchIndex])
     }
 
-    func focus(on symbol: ShellSymbol) {
-        focus(on: symbol.range)
-    }
-
     func clearSearch() {
         searchQuery = ""
         searchResults = []
         currentSearchIndex = 0
     }
 
-    func consumeNoticeMessage() {
-        noticeMessage = nil
-    }
-
     private func handleContentChange() {
         guard !isApplyingProgrammaticChange else { return }
 
         isModified = content != lastSavedContent
-        shellSymbols = indexService.extractSymbols(from: content)
         if isModified {
             sourceResult = nil
             syntaxResult = nil
@@ -164,7 +151,6 @@ final class EditorViewModel: ObservableObject {
         isApplyingProgrammaticChange = true
         content = newContent
         isApplyingProgrammaticChange = false
-        shellSymbols = indexService.extractSymbols(from: newContent)
     }
 
     private func focus(on range: NSRange) {
@@ -181,10 +167,7 @@ final class EditorViewModel: ObservableObject {
     }
 
     private func reloadFromDiskIfNeeded() async {
-        guard !isModified else {
-            noticeMessage = L10n.skippedAutoReload
-            return
-        }
+        guard !isModified else { return }
 
         do {
             let diskContent = try await fileService.read(url: targetURL)
@@ -196,7 +179,6 @@ final class EditorViewModel: ObservableObject {
             lastSavedAt = Date()
             sourceResult = nil
             syntaxResult = nil
-            noticeMessage = L10n.reloadedFromDisk
         } catch let error as AppError {
             lastError = error
         } catch {
@@ -223,9 +205,6 @@ final class EditorViewModel: ObservableObject {
 
         guard latestSyntaxResult.isValid else {
             sourceResult = nil
-            if trigger == .manual {
-                lastError = .syntaxInvalid(latestSyntaxResult.message)
-            }
             return
         }
 

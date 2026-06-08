@@ -1,7 +1,10 @@
-import SwiftUI
+import AppKit
+import Combine
 
 @MainActor
 final class AppEditorSettings: ObservableObject {
+    static let shared = AppEditorSettings()
+
     static let minFontSize: CGFloat = 11
     static let maxFontSize: CGFloat = 24
     static let defaultFontSize: CGFloat = 14

@@ -1,4 +1,4 @@
-import SwiftUI
+import AppKit
 
 enum AppThemeMode: String, CaseIterable, Identifiable {
     case system
@@ -20,14 +20,14 @@ enum AppThemeMode: String, CaseIterable, Identifiable {
         }
     }
 
-    var colorScheme: ColorScheme? {
+    var appearance: NSAppearance? {
         switch self {
         case .system:
             return nil
         case .light:
-            return .light
+            return NSAppearance(named: .aqua)
         case .dark:
-            return .dark
+            return NSAppearance(named: .darkAqua)
         }
     }
 }
