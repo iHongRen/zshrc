@@ -6,6 +6,7 @@ final class EditorTextView: NSTextView {
     var onIncreaseFontSize: (() -> Void)?
     var onDecreaseFontSize: (() -> Void)?
     var onResetFontSize: (() -> Void)?
+    var onCancelSearchCommand: (() -> Bool)?
     private var hasAutoFocused = false
     private var isHoveringLink = false
 
@@ -53,6 +54,25 @@ final class EditorTextView: NSTextView {
 
     override func menu(for event: NSEvent) -> NSMenu? {
         editingContextMenu()
+    }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53,
+           !hasMarkedText(),
+           onCancelSearchCommand?() == true {
+            return
+        }
+
+        super.keyDown(with: event)
+    }
+
+    override func cancelOperation(_ sender: Any?) {
+        if !hasMarkedText(),
+           onCancelSearchCommand?() == true {
+            return
+        }
+
+        super.cancelOperation(sender)
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -208,6 +228,12 @@ final class EditorTextView: NSTextView {
 final class LineNumberRulerView: NSRulerView {
     weak var textView: NSTextView?
     var highlightedLine: Int = 1
+    var isDarkMode = false {
+        didSet {
+            guard oldValue != isDarkMode else { return }
+            needsDisplay = true
+        }
+    }
 
     private let lineNumberFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
 
@@ -247,8 +273,7 @@ final class LineNumberRulerView: NSRulerView {
     }
 
     private var backgroundColor: NSColor {
-        let appearance = textView?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua])
-        return EditorTheme.palette(isDarkMode: appearance == .darkAqua).gutterBackground
+        EditorTheme.palette(isDarkMode: isDarkMode).gutterBackground
     }
 
     private func drawLineNumbers() {
@@ -349,13 +374,11 @@ final class LineNumberRulerView: NSRulerView {
     }
 
     private var highlightColor: NSColor {
-        let appearance = textView?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua])
-        return EditorTheme.palette(isDarkMode: appearance == .darkAqua).gutterActiveLineNumber
+        EditorTheme.palette(isDarkMode: isDarkMode).gutterActiveLineNumber
     }
 
     private var lineNumberColor: NSColor {
-        let appearance = textView?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua])
-        return EditorTheme.palette(isDarkMode: appearance == .darkAqua).gutterLineNumber
+        EditorTheme.palette(isDarkMode: isDarkMode).gutterLineNumber
     }
 }
 
@@ -377,6 +400,9 @@ final class CodeEditorView: NSView {
     }
     var onFindCommand: (() -> Void)? {
         didSet { textView.onFindCommand = onFindCommand }
+    }
+    var onCancelSearchCommand: (() -> Bool)? {
+        didSet { textView.onCancelSearchCommand = onCancelSearchCommand }
     }
 
     var text: String = "" {
@@ -462,6 +488,7 @@ final class CodeEditorView: NSView {
         textView.isAutomaticTextReplacementEnabled = false
         textView.importsGraphics = false
         textView.isAutomaticLinkDetectionEnabled = false
+        textView.smartInsertDeleteEnabled = false
 
         let trackingArea = NSTrackingArea(
             rect: .zero,
@@ -503,6 +530,7 @@ final class CodeEditorView: NSView {
         highlighter.fontSize = fontSize
 
         let palette = EditorTheme.palette(isDarkMode: isDarkMode)
+        rulerView.isDarkMode = isDarkMode
         textView.backgroundColor = palette.editorBackground
         textView.drawsBackground = true
         textView.insertionPointColor = palette.textColor
@@ -512,6 +540,7 @@ final class CodeEditorView: NSView {
             .foregroundColor: palette.textColor
         ]
         scrollView.backgroundColor = palette.editorBackground
+        scrollView.contentView.backgroundColor = palette.editorBackground
 
         if forceRender {
             render(text: textView.string)

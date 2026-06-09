@@ -62,6 +62,12 @@ final class MainViewController: NSViewController {
         refreshAll()
     }
 
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        syncWindowAppearance()
+        refreshAll()
+    }
+
     private func setupLayout() {
         containerView.translatesAutoresizingMaskIntoConstraints = false
         containerView.wantsLayer = true
@@ -136,6 +142,11 @@ final class MainViewController: NSViewController {
             Task { await self.viewModel.save() }
         }
         editorView.onFindCommand = { [weak self] in self?.showSearchBar() }
+        editorView.onCancelSearchCommand = { [weak self] in
+            guard let self, self.isSearchBarVisible else { return false }
+            self.hideSearchBar()
+            return true
+        }
         editorView.onIncreaseFontSize = { [weak self] in self?.editorSettings.increaseFontSize() }
         editorView.onDecreaseFontSize = { [weak self] in self?.editorSettings.decreaseFontSize() }
         editorView.onResetFontSize = { [weak self] in self?.editorSettings.resetFontSize() }
@@ -310,9 +321,13 @@ final class MainViewController: NSViewController {
     }
 
     private func applyTheme() {
-        view.window?.appearance = currentThemeMode.appearance
+        syncWindowAppearance()
         MenuBarController.installMenu()
         refreshAll()
+    }
+
+    private func syncWindowAppearance() {
+        view.window?.appearance = currentThemeMode.appearance
     }
 
     private var resolvedIsDarkMode: Bool {
@@ -351,6 +366,7 @@ private final class SearchBarContainerView: NSView, NSTextFieldDelegate {
     private let nextButton = NSButton()
     private let closeButton = NSButton()
     private let fieldContainer = NSView()
+    private let caseButtonTitle = "Aa"
 
     private var currentPalette = EditorTheme.palette(isDarkMode: false)
     private var isApplyingState = false
@@ -399,8 +415,16 @@ private final class SearchBarContainerView: NSView, NSTextFieldDelegate {
         clearButton.isHidden = query.isEmpty
         previousButton.isEnabled = resultsCount > 0
         nextButton.isEnabled = resultsCount > 0
+        caseButton.state = isCaseSensitive ? .on : .off
         caseButton.contentTintColor = isCaseSensitive ? currentPalette.accentColor : currentPalette.secondaryTextColor
         caseButton.bezelColor = isCaseSensitive ? currentPalette.accentMutedBackground : .clear
+        caseButton.attributedTitle = NSAttributedString(
+            string: caseButtonTitle,
+            attributes: [
+                .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .semibold),
+                .foregroundColor: isCaseSensitive ? currentPalette.accentColor : currentPalette.secondaryTextColor
+            ]
+        )
         iconView.contentTintColor = currentPalette.secondaryTextColor
         searchField.textColor = currentPalette.textColor
         searchField.backgroundColor = currentPalette.searchFieldBackground
@@ -450,7 +474,9 @@ private final class SearchBarContainerView: NSView, NSTextFieldDelegate {
             action: #selector(clearSearch)
         )
 
+        caseButton.setButtonType(.toggle)
         caseButton.bezelStyle = .inline
+        caseButton.isBordered = true
         caseButton.font = .monospacedSystemFont(ofSize: 12, weight: .semibold)
         caseButton.target = self
         caseButton.action = #selector(toggleCaseSensitive)
