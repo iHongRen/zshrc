@@ -80,6 +80,10 @@ final class EditorViewModel: ObservableObject {
         await save(trigger: .manual)
     }
 
+    func syncWithDiskIfNeeded() async {
+        await reloadFromDiskIfNeeded(force: true)
+    }
+
     func search(query: String, caseSensitive: Bool, shouldFocusFirstResult: Bool = true) {
         guard !query.isEmpty else {
             searchResults = []
@@ -166,8 +170,8 @@ final class EditorViewModel: ObservableObject {
         }
     }
 
-    private func reloadFromDiskIfNeeded() async {
-        guard !isModified else { return }
+    private func reloadFromDiskIfNeeded(force: Bool = false) async {
+        guard force || !isModified else { return }
 
         do {
             let diskContent = try await fileService.read(url: targetURL)

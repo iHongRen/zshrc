@@ -390,6 +390,9 @@ final class ZshrcEditorApp: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         MenuBarController.installMenu()
+        Task { @MainActor [weak self] in
+            await self?.viewModel.syncWithDiskIfNeeded()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
