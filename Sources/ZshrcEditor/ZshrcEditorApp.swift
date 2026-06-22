@@ -103,6 +103,15 @@ final class AppMenuActionHandler: NSObject {
 }
 
 @MainActor
+final class SettingsMenuDelegate: NSObject, NSMenuDelegate {
+    static let shared = SettingsMenuDelegate()
+
+    func menuWillOpen(_ menu: NSMenu) {
+        MenuBarController.stripIcons(in: menu)
+    }
+}
+
+@MainActor
 enum MenuBarController {
     static func scheduleInstallation() {
         for delay in [0.0, 0.05, 0.15, 0.35, 0.75, 1.25] {
@@ -114,6 +123,7 @@ enum MenuBarController {
 
     static func installMenu() {
         let mainMenu = NSMenu()
+        mainMenu.showsStateColumn = false
         mainMenu.addItem(appMenuItem())
         mainMenu.addItem(settingsMenuItem())
         NSApp.mainMenu = mainMenu
@@ -122,6 +132,7 @@ enum MenuBarController {
     private static func appMenuItem() -> NSMenuItem {
         let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "zshrc"
         let submenu = NSMenu(title: appName)
+        submenu.showsStateColumn = false
 
         submenu.addItem(menuItem(
             title: L10n.aboutProject,
@@ -133,6 +144,7 @@ enum MenuBarController {
 
         let servicesItem = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
         let servicesMenu = NSMenu(title: "Services")
+        servicesMenu.showsStateColumn = false
         servicesItem.submenu = servicesMenu
         submenu.addItem(servicesItem)
         NSApp.servicesMenu = servicesMenu
@@ -175,6 +187,8 @@ enum MenuBarController {
 
     private static func settingsMenuItem() -> NSMenuItem {
         let submenu = NSMenu(title: L10n.settings)
+        submenu.showsStateColumn = false
+        submenu.delegate = SettingsMenuDelegate.shared
         let handler = AppMenuActionHandler.shared
 
         submenu.addItem(menuItem(
@@ -231,6 +245,7 @@ enum MenuBarController {
             keyEquivalent: "",
             target: handler
         ))
+        stripIcons(in: submenu)
 
         let item = NSMenuItem(title: L10n.settings, action: nil, keyEquivalent: "")
         item.submenu = submenu
@@ -242,6 +257,7 @@ enum MenuBarController {
             rawValue: UserDefaults.standard.string(forKey: AppThemeMode.storageKey) ?? AppThemeMode.system.rawValue
         ) ?? .system
         let submenu = NSMenu(title: L10n.appearance)
+        submenu.showsStateColumn = false
         let handler = AppMenuActionHandler.shared
 
         submenu.addItem(selectableMenuItem(
@@ -273,6 +289,7 @@ enum MenuBarController {
             rawValue: UserDefaults.standard.string(forKey: AppLanguage.storageKey) ?? AppLanguage.system.rawValue
         ) ?? .system
         let submenu = NSMenu(title: L10n.language)
+        submenu.showsStateColumn = false
         let handler = AppMenuActionHandler.shared
 
         submenu.addItem(selectableMenuItem(
@@ -303,6 +320,37 @@ enum MenuBarController {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
         item.target = target
         return item
+    }
+
+    fileprivate static func stripIcons(in menu: NSMenu) {
+        for item in menu.items {
+            item.image = nil
+            item.onStateImage = NSImage(size: .zero)
+            item.offStateImage = NSImage(size: .zero)
+            item.mixedStateImage = NSImage(size: .zero)
+            clearActionImageIfNeeded(for: item)
+            if let submenu = item.submenu {
+                stripIcons(in: submenu)
+            }
+        }
+    }
+
+    private static func clearActionImageIfNeeded(for item: NSMenuItem) {
+        let hasActionImageSelector = NSSelectorFromString("_setHasActionImage:")
+        if item.responds(to: hasActionImageSelector),
+           let method = item.method(for: hasActionImageSelector) {
+            typealias BoolSetter = @convention(c) (AnyObject, Selector, Bool) -> Void
+            let fn = unsafeBitCast(method, to: BoolSetter.self)
+            fn(item, hasActionImageSelector, false)
+        }
+
+        let actionImageSelector = NSSelectorFromString("_setActionImage:")
+        if item.responds(to: actionImageSelector),
+           let method = item.method(for: actionImageSelector) {
+            typealias ObjectSetter = @convention(c) (AnyObject, Selector, AnyObject?) -> Void
+            let fn = unsafeBitCast(method, to: ObjectSetter.self)
+            fn(item, actionImageSelector, nil)
+        }
     }
 
     private static func selectableMenuItem(

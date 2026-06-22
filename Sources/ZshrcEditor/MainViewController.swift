@@ -674,7 +674,8 @@ private final class StatusBarContainerView: NSView {
         stackView.addArrangedSubview(spacer)
 
         if let lastSavedAt {
-            savedAtLabel.stringValue = lastSavedAt.formatted(date: .omitted, time: .shortened)
+            let time = lastSavedAt.formatted(date: .omitted, time: .shortened)
+            savedAtLabel.stringValue = L10n.modifiedAt(time)
             savedAtLabel.isHidden = false
             savedAtLabel.textColor = palette.secondaryTextColor
         } else {

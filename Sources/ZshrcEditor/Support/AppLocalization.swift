@@ -110,6 +110,9 @@ enum L10n {
 
     static var unsavedChanges: String { text("Unsaved changes", "未保存") }
     static var saved: String { text("Saved", "已保存") }
+    static func modifiedAt(_ time: String) -> String {
+        text("Modified at \(time)", "修改于 \(time)")
+    }
     static func lineColumn(_ line: Int, _ column: Int) -> String {
         text("Line \(line), Col \(column)", "第 \(line) 行，第 \(column) 列")
     }
