@@ -11,9 +11,9 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A10000000000000000000006 /* Sources/ZshrcEditor */ = {
+		A10000000000000000000006 /* ZshrcEditor */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Sources/ZshrcEditor;
+			name = ZshrcEditor;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +32,7 @@
 		A10000000000000000000001 = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000006 /* Sources/ZshrcEditor */,
+				A10000000000000000000006 /* ZshrcEditor */,
 				A10000000000000000000004 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -61,7 +61,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A10000000000000000000006 /* Sources/ZshrcEditor */,
+				A10000000000000000000006 /* ZshrcEditor */,
 			);
 			name = ZshrcEditor;
 			packageProductDependencies = (

@@ -40,17 +40,15 @@
 
 ### 运行方式
 
-1. 使用 Xcode 打开 [ZshrcEditor.xcodeproj](/Users/cxy/Desktop/CXY/zshrc/ZshrcEditor.xcodeproj)
+1. 使用 Xcode 打开 [ZshrcEditor.xcodeproj](/Users/cxy/Desktop/CXY/zshrc/ZshrcEditor/ZshrcEditor.xcodeproj)
 2. 选择 `ZshrcEditor` scheme
 3. 运行 App
 
 ### 项目结构
 
-- [Sources/ZshrcEditor](/Users/cxy/Desktop/CXY/zshrc/Sources/ZshrcEditor)
+- [ZshrcEditor](/Users/cxy/Desktop/CXY/zshrc/ZshrcEditor)
   应用源码
-- [Designs](/Users/cxy/Desktop/CXY/zshrc/Designs)
-  图标等设计资源
-- [Scripts](/Users/cxy/Desktop/CXY/zshrc/Scripts)
+- [scripts](/Users/cxy/Desktop/CXY/zshrc/scripts)
   辅助脚本
 
 ### 截图文件建议

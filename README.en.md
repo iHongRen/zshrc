@@ -40,17 +40,15 @@ Screenshot placeholders:
 
 ### Run
 
-1. Open [ZshrcEditor.xcodeproj](/Users/cxy/Desktop/CXY/zshrc/ZshrcEditor.xcodeproj) in Xcode
+1. Open [ZshrcEditor.xcodeproj](/Users/cxy/Desktop/CXY/zshrc/ZshrcEditor/ZshrcEditor.xcodeproj) in Xcode
 2. Select the `ZshrcEditor` scheme
 3. Run the app
 
 ### Project Layout
 
-- [Sources/ZshrcEditor](/Users/cxy/Desktop/CXY/zshrc/Sources/ZshrcEditor)
+- [ZshrcEditor](/Users/cxy/Desktop/CXY/zshrc/ZshrcEditor)
   Application source code
-- [Designs](/Users/cxy/Desktop/CXY/zshrc/Designs)
-  Design assets such as the app icon
-- [Scripts](/Users/cxy/Desktop/CXY/zshrc/Scripts)
+- [scripts](/Users/cxy/Desktop/CXY/zshrc/scripts)
   Helper scripts
 
 ### Suggested Screenshot Filenames
