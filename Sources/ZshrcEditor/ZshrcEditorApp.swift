@@ -420,7 +420,7 @@ final class ZshrcEditorApp: NSObject, NSApplicationDelegate {
             commandCoordinator: commandCoordinator
         )
 
-        let window = ResizableEditorWindow(
+        let window = NSWindow(
             contentRect: NSRect(origin: .zero, size: MainViewController.defaultContentSize),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
@@ -428,7 +428,6 @@ final class ZshrcEditorApp: NSObject, NSApplicationDelegate {
         )
         window.title = viewModel.targetURL.lastPathComponent
         window.isReleasedWhenClosed = false
-        window.acceptsMouseMovedEvents = true
         window.contentViewController = rootViewController
         window.setContentSize(MainViewController.defaultContentSize)
         window.minSize = NSSize(
@@ -447,129 +446,6 @@ final class ZshrcEditorApp: NSObject, NSApplicationDelegate {
             window.makeKey()
             window.makeMain()
             window.orderFrontRegardless()
-        }
-    }
-}
-
-@MainActor
-private final class ResizableEditorWindow: NSWindow {
-    private enum Edge {
-        case left
-        case right
-        case top
-        case bottom
-        case topLeft
-        case topRight
-        case bottomLeft
-        case bottomRight
-    }
-
-    private let edgeInset: CGFloat = 12
-    private var activeEdge: Edge?
-    private var initialFrame: NSRect = .zero
-    private var initialMouseLocation: NSPoint = .zero
-
-    override func mouseMoved(with event: NSEvent) {
-        let point = event.locationInWindow
-        updateCursor(for: point)
-        super.mouseMoved(with: event)
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        let point = event.locationInWindow
-        guard let edge = edge(for: point) else {
-            super.mouseDown(with: event)
-            return
-        }
-
-        activeEdge = edge
-        initialFrame = frame
-        initialMouseLocation = convertPoint(toScreen: event.locationInWindow)
-    }
-
-    override func mouseDragged(with event: NSEvent) {
-        guard let edge = activeEdge else {
-            super.mouseDragged(with: event)
-            return
-        }
-
-        let currentMouseLocation = convertPoint(toScreen: event.locationInWindow)
-        let deltaX = currentMouseLocation.x - initialMouseLocation.x
-        let deltaY = currentMouseLocation.y - initialMouseLocation.y
-        let minimumSize = minSize
-        var nextFrame = initialFrame
-
-        switch edge {
-        case .left, .topLeft, .bottomLeft:
-            let proposedWidth = max(minimumSize.width, initialFrame.width - deltaX)
-            nextFrame.origin.x = initialFrame.maxX - proposedWidth
-            nextFrame.size.width = proposedWidth
-        case .right, .topRight, .bottomRight:
-            nextFrame.size.width = max(minimumSize.width, initialFrame.width + deltaX)
-        case .top, .bottom:
-            break
-        }
-
-        switch edge {
-        case .bottom, .bottomLeft, .bottomRight:
-            let proposedHeight = max(minimumSize.height, initialFrame.height - deltaY)
-            nextFrame.origin.y = initialFrame.maxY - proposedHeight
-            nextFrame.size.height = proposedHeight
-        case .top, .topLeft, .topRight:
-            nextFrame.size.height = max(minimumSize.height, initialFrame.height + deltaY)
-        case .left, .right:
-            break
-        }
-
-        setFrame(nextFrame, display: true)
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        activeEdge = nil
-        let point = event.locationInWindow
-        updateCursor(for: point)
-        super.mouseUp(with: event)
-    }
-
-    private func updateCursor(for point: NSPoint) {
-        guard let edge = edge(for: point) else {
-            if activeEdge == nil {
-                NSCursor.arrow.set()
-            }
-            return
-        }
-
-        cursor(for: edge).set()
-    }
-
-    private func edge(for point: NSPoint) -> Edge? {
-        let frameRect = contentView?.frame ?? .zero
-        guard frameRect.contains(point) else { return nil }
-
-        let isLeft = point.x <= frameRect.minX + edgeInset
-        let isRight = point.x >= frameRect.maxX - edgeInset
-        let isBottom = point.y <= edgeInset
-        let isTop = point.y >= frameRect.maxY - edgeInset
-
-        if isTop && isLeft { return .topLeft }
-        if isTop && isRight { return .topRight }
-        if isBottom && isLeft { return .bottomLeft }
-        if isBottom && isRight { return .bottomRight }
-        if isLeft { return .left }
-        if isRight { return .right }
-        if isTop { return .top }
-        if isBottom { return .bottom }
-        return nil
-    }
-
-    private func cursor(for edge: Edge) -> NSCursor {
-        switch edge {
-        case .left, .right:
-            return .resizeLeftRight
-        case .top, .bottom:
-            return .resizeUpDown
-        case .topLeft, .topRight, .bottomLeft, .bottomRight:
-            return .crosshair
         }
     }
 }

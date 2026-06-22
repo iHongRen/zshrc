@@ -4,7 +4,7 @@ import Combine
 @MainActor
 final class MainViewController: NSViewController {
     static let defaultContentSize = NSSize(width: 1280, height: 840)
-    static let minimumContentSize = NSSize(width: 900, height: 560)
+    static let minimumContentSize = NSSize(width: 360, height: 220)
 
     private let viewModel: EditorViewModel
     private let editorSettings: AppEditorSettings
@@ -58,7 +58,6 @@ final class MainViewController: NSViewController {
         setupActions()
         bindState()
         applyTheme()
-        preferredContentSize = Self.defaultContentSize
         refreshAll()
     }
 
@@ -69,7 +68,6 @@ final class MainViewController: NSViewController {
     }
 
     private func setupLayout() {
-        containerView.translatesAutoresizingMaskIntoConstraints = false
         containerView.wantsLayer = true
         view.setFrameSize(Self.defaultContentSize)
 
@@ -100,9 +98,6 @@ final class MainViewController: NSViewController {
         let searchBarHeightConstraint = searchBarView.heightAnchor.constraint(equalToConstant: 0)
         searchBarHeightConstraint.isActive = true
         self.searchBarHeightConstraint = searchBarHeightConstraint
-
-        view.widthAnchor.constraint(greaterThanOrEqualToConstant: Self.minimumContentSize.width).isActive = true
-        view.heightAnchor.constraint(greaterThanOrEqualToConstant: Self.minimumContentSize.height).isActive = true
     }
 
     private func setupActions() {
@@ -514,10 +509,14 @@ private final class SearchBarContainerView: NSView, NSTextFieldDelegate {
         addSubview(nextButton)
         addSubview(closeButton)
 
+        let preferredFieldWidth = fieldContainer.widthAnchor.constraint(equalToConstant: 320)
+        preferredFieldWidth.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
             fieldContainer.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             fieldContainer.centerYAnchor.constraint(equalTo: centerYAnchor),
-            fieldContainer.widthAnchor.constraint(equalToConstant: 320),
+            preferredFieldWidth,
+            fieldContainer.widthAnchor.constraint(greaterThanOrEqualToConstant: 140),
             fieldContainer.heightAnchor.constraint(equalToConstant: 28),
 
             iconView.leadingAnchor.constraint(equalTo: fieldContainer.leadingAnchor, constant: 12),
@@ -540,6 +539,7 @@ private final class SearchBarContainerView: NSView, NSTextFieldDelegate {
 
             caseButton.leadingAnchor.constraint(equalTo: fieldContainer.trailingAnchor, constant: 12),
             caseButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            caseButton.trailingAnchor.constraint(lessThanOrEqualTo: previousButton.leadingAnchor, constant: -8),
             caseButton.widthAnchor.constraint(equalToConstant: 32),
             caseButton.heightAnchor.constraint(equalToConstant: 24),
 
