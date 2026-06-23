@@ -245,13 +245,6 @@ final class MainViewController: NSViewController {
             items.append(.init(text: syntaxResult.reasonLabel, color: palette.dangerColor, toolTip: syntaxResult.message))
         }
 
-        if let result = viewModel.sourceResult {
-            let text = result.success ? L10n.sourceSucceeded : L10n.sourceFailed
-            let color = result.success ? palette.successColor : palette.dangerColor
-            let toolTip = result.success ? result.output : result.errorOutput
-            items.append(.init(text: text, color: color, toolTip: toolTip))
-        }
-
         if !viewModel.searchQuery.isEmpty {
             let label = viewModel.searchResults.isEmpty
                 ? L10n.noMatches

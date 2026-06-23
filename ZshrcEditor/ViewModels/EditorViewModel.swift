@@ -17,7 +17,6 @@ final class EditorViewModel: ObservableObject {
     @Published var currentSearchIndex = 0
     @Published var focusedRange: NSRange?
     @Published var focusRevision = 0
-    @Published var sourceResult: SourceResult?
     @Published var syntaxResult: SyntaxCheckResult?
     @Published var isCheckingSyntax = false
     @Published var lastError: AppError?
@@ -27,7 +26,6 @@ final class EditorViewModel: ObservableObject {
     let targetURL: URL
 
     private let fileService: any FileServiceProtocol
-    private let sourceRunner: any SourceRunnerProtocol
     private let syntaxChecker: any SyntaxCheckerProtocol
     private let fileWatcher: FileWatcherProtocol
 
@@ -42,13 +40,11 @@ final class EditorViewModel: ObservableObject {
     init(
         targetURL: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".zshrc"),
         fileService: FileServiceProtocol = FileService(),
-        sourceRunner: SourceRunnerProtocol = SourceRunner(),
         syntaxChecker: SyntaxCheckerProtocol = SyntaxChecker(),
         fileWatcher: FileWatcherProtocol = FileWatcher()
     ) {
         self.targetURL = targetURL
         self.fileService = fileService
-        self.sourceRunner = sourceRunner
         self.syntaxChecker = syntaxChecker
         self.fileWatcher = fileWatcher
     }
@@ -66,7 +62,6 @@ final class EditorViewModel: ObservableObject {
             isModified = false
             lastSavedAt = Date()
             lastError = nil
-            sourceResult = nil
             syntaxResult = nil
             startWatchingFileChanges()
         } catch let error as AppError {
@@ -139,7 +134,6 @@ final class EditorViewModel: ObservableObject {
 
         isModified = content != lastSavedContent
         if isModified {
-            sourceResult = nil
             syntaxResult = nil
         }
 
@@ -181,7 +175,6 @@ final class EditorViewModel: ObservableObject {
             lastSavedContent = diskContent
             isModified = false
             lastSavedAt = Date()
-            sourceResult = nil
             syntaxResult = nil
         } catch let error as AppError {
             lastError = error
@@ -208,7 +201,6 @@ final class EditorViewModel: ObservableObject {
         applySyntaxResult(latestSyntaxResult, trigger: trigger)
 
         guard latestSyntaxResult.isValid else {
-            sourceResult = nil
             return
         }
 
@@ -221,14 +213,6 @@ final class EditorViewModel: ObservableObject {
             isModified = content != lastSavedContent
             lastSavedAt = Date()
             lastError = nil
-
-            let result = await sourceRunner.source(file: targetURL)
-            sourceResult = result
-
-            if !result.success {
-                let message = result.errorOutput.isEmpty ? L10n.unknownZshError : result.errorOutput
-                lastError = .sourceFailed(message)
-            }
         } catch let error as AppError {
             lastError = error
         } catch {

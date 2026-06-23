@@ -4,7 +4,7 @@
 
 [中文 README](./README.md)
 
-[zshrc](https://github.com/iHongRen/zshrc) is a minimal macOS app for viewing and editing `~/.zshrc`. It automatically runs `source ~/.zshrc` after saving.
+[zshrc](https://github.com/iHongRen/zshrc) is a minimal macOS app for viewing and editing `~/.zshrc`. It runs a syntax check when you save.
 
 ![](./screenshots/app.png)
 
@@ -32,7 +32,6 @@ xattr -dr com.apple.quarantine /Applications/zshrc.app
 - Line numbers and Shell syntax highlighting
 - Search bar, match count, and previous/next match navigation
 - Syntax validation on save
-- Automatically runs `source ~/.zshrc` after a successful save
 - Save status, syntax status, and cursor line/column display
 - Zoom in, zoom out, and reset font size
 - Light / dark / follow system appearance modes

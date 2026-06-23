@@ -117,8 +117,6 @@ enum L10n {
         text("Line \(line), Col \(column)", "第 \(line) 行，第 \(column) 列")
     }
 
-    static var sourceFailed: String { text("source failed", "source 失败") }
-    static var sourceSucceeded: String { text("source ok", "source 成功") }
     static var noMatches: String { text("No matches", "无匹配") }
     static func matchesCount(current: Int, total: Int) -> String {
         text("\(current)/\(total) matches", "\(current)/\(total) 个匹配")
@@ -151,13 +149,4 @@ enum L10n {
             "请先修复语法错误再保存：\(message)"
         )
     }
-
-    static func savedButSourceFailed(_ message: String) -> String {
-        text(
-            "Saved the file, but `source` failed: \(message)",
-            "文件已保存，但 `source` 执行失败：\(message)"
-        )
-    }
-
-    static var unknownZshError: String { text("Unknown zsh error.", "未知 zsh 错误。") }
 }

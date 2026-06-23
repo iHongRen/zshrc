@@ -4,7 +4,7 @@
 
 [English README](./README.en.md)
 
-[zshrc](https://github.com/iHongRen/zshrc) 一个极简 macOS App，打开就能查看、编辑 `~/.zshrc`，保存自动执行 `source ~/.zshrc`。
+[zshrc](https://github.com/iHongRen/zshrc) 一个极简 macOS App，打开就能查看、编辑 `~/.zshrc`，保存时自动进行语法检查。
 
 ![](./screenshots/app.png)
 
@@ -36,7 +36,6 @@ xattr -dr com.apple.quarantine /Applications/zshrc.app
 - 行号显示与 Shell 语法高亮
 - 搜索栏、结果计数、上一个/下一个匹配跳转
 - 保存时执行语法检查
-- 保存成功后自动执行 `source ~/.zshrc`
 - 显示保存状态、语法状态、光标行列号
 - 支持放大、缩小、恢复默认字号
 - 支持浅色 / 深色 / 跟随系统
