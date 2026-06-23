@@ -18,6 +18,7 @@ need_command() {
 
 need_command curl
 need_command hdiutil
+need_command open
 need_command xattr
 
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/zshrc-install.XXXXXX")"
@@ -63,5 +64,5 @@ printf 'Removing macOS quarantine attributes...\n'
 xattr -dr com.apple.quarantine "${TARGET_APP}" >/dev/null 2>&1 || true
 
 printf 'Installed %s successfully.\n' "${TARGET_APP}"
-printf 'Open it with:\n'
-printf '  open %s\n' "${TARGET_APP}"
+printf 'Opening %s...\n' "${APP_NAME}.app"
+open "${TARGET_APP}"
