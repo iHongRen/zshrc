@@ -107,6 +107,17 @@ enum L10n {
     static var cancel: String { text("Cancel", "取消") }
     static var somethingWentWrong: String { text("Something went wrong", "发生错误") }
     static var ok: String { text("OK", "确定") }
+    static var keepMyChanges: String { text("Keep My Changes", "保留我的修改") }
+    static var loadDiskVersion: String { text("Load Disk Version", "加载磁盘版本") }
+    static func fileChangedOnDisk(_ fileName: String) -> String {
+        text("\(fileName) changed on disk", "\(fileName) 已在磁盘上变更")
+    }
+    static func fileChangedOnDiskMessage(_ fileName: String) -> String {
+        text(
+            "This file changed on disk while you also have unsaved edits. Keep your current editor content and overwrite the file, or load the disk version and discard your unsaved changes.",
+            "这个文件在磁盘上已被修改，而你当前也有未保存的编辑。你可以保留当前编辑器内容并覆盖磁盘文件，或者加载磁盘版本并放弃当前未保存修改。"
+        )
+    }
 
     static var unsavedChanges: String { text("Unsaved changes", "未保存") }
     static var saved: String { text("Saved", "已保存") }

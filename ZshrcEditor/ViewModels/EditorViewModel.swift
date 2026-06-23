@@ -3,6 +3,10 @@ import Foundation
 
 @MainActor
 final class EditorViewModel: ObservableObject {
+    struct SaveConflict: Equatable {
+        let fileName: String
+    }
+
     @Published var content: String = "" {
         didSet {
             guard content != oldValue else { return }
@@ -22,6 +26,7 @@ final class EditorViewModel: ObservableObject {
     @Published var lastError: AppError?
     @Published var isLoading = false
     @Published var lastSavedAt: Date?
+    @Published var pendingSaveConflict: SaveConflict?
 
     let targetURL: URL
 
@@ -36,6 +41,7 @@ final class EditorViewModel: ObservableObject {
     private var lastSavedContent = ""
     private var isApplyingProgrammaticChange = false
     private var isSaving = false
+    private var pendingExternalContent: String?
 
     init(
         targetURL: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".zshrc"),
@@ -63,6 +69,8 @@ final class EditorViewModel: ObservableObject {
             lastSavedAt = Date()
             lastError = nil
             syntaxResult = nil
+            pendingExternalContent = nil
+            pendingSaveConflict = nil
             startWatchingFileChanges()
         } catch let error as AppError {
             lastError = error
@@ -72,11 +80,34 @@ final class EditorViewModel: ObservableObject {
     }
 
     func save() async {
-        await save(trigger: .manual)
+        if resolvePendingExternalChangeIfCurrentContentMatchesDisk() {
+            return
+        }
+
+        if pendingExternalContent != nil {
+            pendingSaveConflict = SaveConflict(fileName: targetURL.lastPathComponent)
+            return
+        }
+
+        await performSave(trigger: .manual)
     }
 
     func syncWithDiskIfNeeded() async {
+        await reloadFromDiskIfNeeded()
+    }
+
+    func keepCurrentContentAndOverwriteDisk() async {
+        pendingSaveConflict = nil
+        await performSave(trigger: .manual)
+    }
+
+    func loadDiskVersionDiscardingCurrentChanges() async {
+        pendingSaveConflict = nil
         await reloadFromDiskIfNeeded(force: true)
+    }
+
+    func dismissPendingSaveConflict() {
+        pendingSaveConflict = nil
     }
 
     func search(query: String, caseSensitive: Bool, shouldFocusFirstResult: Bool = true) {
@@ -165,17 +196,28 @@ final class EditorViewModel: ObservableObject {
     }
 
     private func reloadFromDiskIfNeeded(force: Bool = false) async {
-        guard force || !isModified else { return }
-
         do {
             let diskContent = try await fileService.read(url: targetURL)
-            guard diskContent != content else { return }
 
-            applyProgrammaticContent(diskContent)
+            if !force && isModified {
+                stagePendingExternalChangeIfNeeded(for: diskContent)
+                return
+            }
+
+            guard force || diskContent != content || lastSavedContent != diskContent || pendingExternalContent != nil else {
+                return
+            }
+
+            if diskContent != content {
+                applyProgrammaticContent(diskContent)
+            }
             lastSavedContent = diskContent
+            pendingExternalContent = nil
+            pendingSaveConflict = nil
             isModified = false
             lastSavedAt = Date()
             syntaxResult = nil
+            lastError = nil
         } catch let error as AppError {
             lastError = error
         } catch {
@@ -183,7 +225,32 @@ final class EditorViewModel: ObservableObject {
         }
     }
 
-    private func save(
+    private func stagePendingExternalChangeIfNeeded(for diskContent: String) {
+        guard diskContent != lastSavedContent else {
+            pendingExternalContent = nil
+            pendingSaveConflict = nil
+            return
+        }
+
+        pendingExternalContent = diskContent
+    }
+
+    private func resolvePendingExternalChangeIfCurrentContentMatchesDisk() -> Bool {
+        guard let pendingExternalContent,
+              pendingExternalContent == content else {
+            return false
+        }
+
+        lastSavedContent = pendingExternalContent
+        self.pendingExternalContent = nil
+        pendingSaveConflict = nil
+        isModified = false
+        lastSavedAt = Date()
+        lastError = nil
+        return true
+    }
+
+    private func performSave(
         trigger: SaveTrigger,
         precomputedSyntaxResult: SyntaxCheckResult? = nil,
         contentSnapshot: String? = nil
@@ -210,6 +277,8 @@ final class EditorViewModel: ObservableObject {
         do {
             try await fileService.write(content: snapshot, to: targetURL)
             lastSavedContent = snapshot
+            pendingExternalContent = nil
+            pendingSaveConflict = nil
             isModified = content != lastSavedContent
             lastSavedAt = Date()
             lastError = nil

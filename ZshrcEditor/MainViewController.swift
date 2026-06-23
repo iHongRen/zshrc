@@ -21,6 +21,7 @@ final class MainViewController: NSViewController {
     private var cursorColumn = 1
     private var isSearchBarVisible = false
     private var hasShownInitialWindow = false
+    private var isPresentingSaveConflictAlert = false
 
     private let containerView = NSView()
     private let searchBarView = SearchBarContainerView()
@@ -256,6 +257,11 @@ final class MainViewController: NSViewController {
     }
 
     private func presentAlertsIfNeeded() {
+        if let conflict = viewModel.pendingSaveConflict {
+            presentSaveConflictAlertIfNeeded(conflict)
+            return
+        }
+
         if let error = viewModel.lastError {
             let alert = NSAlert()
             alert.messageText = L10n.somethingWentWrong
@@ -263,6 +269,32 @@ final class MainViewController: NSViewController {
             alert.addButton(withTitle: L10n.ok)
             alert.beginSheetModal(for: view.window ?? NSWindow()) { [weak self] _ in
                 self?.viewModel.lastError = nil
+            }
+        }
+    }
+
+    private func presentSaveConflictAlertIfNeeded(_ conflict: EditorViewModel.SaveConflict) {
+        guard !isPresentingSaveConflictAlert else { return }
+        isPresentingSaveConflictAlert = true
+
+        let alert = NSAlert()
+        alert.messageText = L10n.fileChangedOnDisk(conflict.fileName)
+        alert.informativeText = L10n.fileChangedOnDiskMessage(conflict.fileName)
+        alert.addButton(withTitle: L10n.keepMyChanges)
+        alert.addButton(withTitle: L10n.loadDiskVersion)
+        alert.addButton(withTitle: L10n.cancel)
+
+        alert.beginSheetModal(for: view.window ?? NSWindow()) { [weak self] response in
+            guard let self else { return }
+            self.isPresentingSaveConflictAlert = false
+
+            switch response {
+            case .alertFirstButtonReturn:
+                Task { await self.viewModel.keepCurrentContentAndOverwriteDisk() }
+            case .alertSecondButtonReturn:
+                Task { await self.viewModel.loadDiskVersionDiscardingCurrentChanges() }
+            default:
+                self.viewModel.dismissPendingSaveConflict()
             }
         }
     }
