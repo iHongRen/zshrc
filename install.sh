@@ -6,7 +6,7 @@ REPO_OWNER="${REPO_OWNER:-iHongRen}"
 REPO_NAME="${REPO_NAME:-zshrc}"
 APP_NAME="${APP_NAME:-zshrc}"
 DMG_NAME="${DMG_NAME:-zshrc.dmg}"
-INSTALL_DIR="${INSTALL_DIR:-$HOME/Applications}"
+INSTALL_DIR="${INSTALL_DIR:-/Applications}"
 DMG_URL="${DMG_URL:-https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download/${DMG_NAME}}"
 
 need_command() {

@@ -16,6 +16,8 @@
 curl -fsSL https://raw.githubusercontent.com/iHongRen/zshrc/main/install.sh | sh
 ```
 
+It installs to `/Applications/zshrc.app` by default.
+
 2. Manual installation:
 
 Download the latest `zshrc.dmg` from [GitHub Releases](https://github.com/iHongRen/zshrc/releases), install it, then run this command in Terminal to remove the quarantine attribute for the unsigned app:

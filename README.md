@@ -16,6 +16,8 @@
 curl -fsSL https://raw.githubusercontent.com/iHongRen/zshrc/main/install.sh | sh
 ```
 
+默认会安装到 `/Applications/zshrc.app`。
+
 
 
 2、手动安装：
